@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battery Pack Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f0f0f;color:#e0e0e0;font-family:'Courier New',monospace;padding:2rem 1rem;min-height:100vh}
+.app{max-width:920px;margin:0 auto}
+h1{font-size:20px;font-weight:700;letter-spacing:0.12em;color:#f0f0f0;margin-bottom:4px}
+.sub{font-size:11px;color:#555;letter-spacing:0.1em;margin-bottom:2rem;text-transform:uppercase}
+.section{background:#181818;border:0.5px solid #2a2a2a;border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1rem}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:0.15em;color:#555;text-transform:uppercase;margin-bottom:0.85rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+@media(max-width:600px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}}
+label{font-size:11px;color:#888;display:block;margin-bottom:4px;letter-spacing:0.04em}
+select,input[type=number]{width:100%;font-size:12px;font-family:'Courier New',monospace;padding:7px 9px;background:#0f0f0f;border:0.5px solid #333;border-radius:6px;color:#e0e0e0;transition:border-color 0.15s}
+select:focus,input:focus{outline:none;border-color:#555}
+.cell-card{background:#0f0f0f;border:0.5px solid #2a2a2a;border-radius:7px;padding:0.85rem;margin-top:0.75rem}
+.cell-name{font-size:13px;font-weight:700;color:#f0f0f0;margin-bottom:6px}
+.cell-specs{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11px;color:#666}
+.cell-note{font-size:10px;color:#444;margin-top:5px}
+.badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:0.08em;margin-left:4px}
+.badge-lfp{background:#0a2e22;color:#3ecf8e}
+.badge-ncm{background:#0a1f3a;color:#4da6ff}
+.badge-nca{background:#2e1a05;color:#f0a832}
+.badge-cyl{background:#1e1a3a;color:#a89cf7}
+.badge-pou{background:#2e0f1e;color:#f47ab0}
+.badge-pri{background:#1a2e0a;color:#7dcf5a}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:0.85rem}
+@media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.metric{background:#0f0f0f;border:0.5px solid #2a2a2a;border-radius:7px;padding:0.65rem 0.75rem;text-align:center}
+.metric-val{font-size:17px;font-weight:700;color:#f0f0f0}
+.metric-lbl{font-size:9px;color:#444;letter-spacing:0.08em;margin-top:3px;text-transform:uppercase}
+.run-btn{width:100%;padding:11px;background:#0f0f0f;border:0.5px solid #444;border-radius:8px;font-family:'Courier New',monospace;font-size:13px;font-weight:700;letter-spacing:0.1em;color:#e0e0e0;cursor:pointer;transition:all 0.15s;text-transform:uppercase}
+.run-btn:hover{background:#1a1a1a;border-color:#666;color:#fff}
+.run-btn:active{transform:scale(0.99)}
+.results{display:none}.results.show{display:block}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid #1e1e1e;font-size:12px}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{color:#666}.stat-val{font-weight:700;color:#e0e0e0}
+.alert{padding:9px 13px;border-radius:7px;font-size:12px;margin-top:8px;font-weight:500}
+.alert-ok{background:#0a1f0f;color:#3ecf8e;border:0.5px solid #1a4a28}
+.alert-warn{background:#2a1a00;color:#f0a832;border:0.5px solid #4a3000}
+.alert-danger{background:#2a0a0a;color:#ff6b6b;border:0.5px solid #4a1515}
+.rstack{background:#0f0f0f;border:0.5px solid #2a2a2a;border-radius:7px;padding:0.75rem;margin-top:0.75rem;font-size:12px}
+.rstack-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid #1a1a1a;color:#888}
+.rstack-row:last-child{border-bottom:none;font-weight:700;color:#e0e0e0}
+.rstack-lbl{color:#555}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:0.85rem}
+.charts-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px}
+@media(max-width:700px){.charts-grid,.charts-grid3{grid-template-columns:1fr}}
+.chart-panel{background:#0f0f0f;border:0.5px solid #2a2a2a;border-radius:8px;padding:0.85rem}
+.chart-label{font-size:9px;letter-spacing:0.1em;color:#444;margin-bottom:8px;text-transform:uppercase}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:0.85rem}
+@media(max-width:600px){.results-grid{grid-template-columns:1fr}}
+.results-block-title{font-size:9px;letter-spacing:0.1em;color:#444;margin-bottom:8px;text-transform:uppercase}
+footer{margin-top:2rem;text-align:center;font-size:10px;color:#333;letter-spacing:0.08em}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>⚡ BATTERY PACK SIMULATOR</h1>
+<div class="sub">Thermal · Electrical · Bottom Cooling · MVP v1.0</div>
+
+<!-- 01 Cell Selection -->
+<div class="section">
+<div class="sec-title">01 — Cell Selection</div>
+<div class="grid2">
+<div><label>Chemistry</label>
+<select id="chem" onchange="updateCells()">
+<option value="LFP">LFP — Lithium Iron Phosphate</option>
+<option value="NCM">NCM — Nickel Manganese Cobalt</option>
+<option value="NCA">NCA — Nickel Cobalt Aluminum</option>
+</select></div>
+<div><label>Cell Model</label><select id="cellModel" onchange="updateCard()"></select></div>
+</div>
+<div class="cell-card" id="cellCard"></div>
+</div>
+
+<!-- 02 Pack Config -->
+<div class="section">
+<div class="sec-title">02 — Pack Configuration</div>
+<div class="grid3">
+<div><label>Cells in Series (S)</label><input type="number" id="ns" value="16" min="1" max="300" oninput="updatePackMetrics()"></div>
+<div><label>Cells in Parallel (P)</label><input type="number" id="np" value="4" min="1" max="100" oninput="updatePackMetrics()"></div>
+<div><label>Discharge C-Rate</label><input type="number" id="crate" value="1.0" min="0.1" max="5" step="0.1" oninput="updatePackMetrics()"></div>
+</div>
+<div class="metrics" id="packMetrics"></div>
+</div>
+
+<!-- 03 Thermal Stack -->
+<div class="section">
+<div class="sec-title">03 — Thermal Stack (Cell → TIM → Cold Plate → Coolant)</div>
+<div class="grid3" style="margin-bottom:10px">
+<div><label>TIM Thickness (mm)</label><input type="number" id="timThk" value="0.5" min="0.05" max="5" step="0.05" oninput="updateRstack()"></div>
+<div><label>TIM Conductivity k (W/m·K)</label><input type="number" id="timK" value="3.0" min="0.1" max="20" step="0.1" oninput="updateRstack()"></div>
+<div><label>TIM Preset</label>
+<select onchange="setTIM(this.value)">
+<option value="">— custom —</option>
+<option value="1.0,0.25">Silicone pad (k=1, 0.25mm)</option>
+<option value="3.0,0.5">Thermal paste (k=3, 0.5mm)</option>
+<option value="6.0,0.3">Graphite sheet (k=6, 0.3mm)</option>
+<option value="8.0,0.2">Phase-change (k=8, 0.2mm)</option>
+<option value="12.0,0.15">High-perf TIM (k=12, 0.15mm)</option>
+</select></div>
+</div>
+<div class="grid3" style="margin-bottom:10px">
+<div><label>Cold Plate Material</label>
+<select id="cpMat" onchange="setCPmat(this.value)">
+<option value="205">Aluminum (k=205 W/m·K)</option>
+<option value="400">Copper (k=400 W/m·K)</option>
+<option value="16">Stainless Steel (k=16 W/m·K)</option>
+<option value="custom">Custom k</option>
+</select></div>
+<div><label>Cold Plate k (W/m·K)</label><input type="number" id="cpK" value="205" min="1" max="500" step="1" oninput="updateRstack()"></div>
+<div><label>Cold Plate Thickness (mm)</label><input type="number" id="cpThk" value="5" min="1" max="30" step="0.5" oninput="updateRstack()"></div>
+</div>
+<div class="grid2">
+<div><label>Coolant HTC h (W/m²·K)</label><input type="number" id="htc" value="50" min="1" max="2000" oninput="updateRstack()"></div>
+<div><label>Ambient / Coolant Temp (°C)</label><input type="number" id="Tamb" value="25" min="-20" max="60"></div>
+</div>
+<div class="rstack" id="rstack"></div>
+</div>
+
+<!-- 04 Sim Settings -->
+<div class="section">
+<div class="sec-title">04 — Simulation Settings</div>
+<div class="grid3">
+<div><label>Starting Temp (°C)</label><input type="number" id="T0" value="25" min="-20" max="60"></div>
+<div><label>Duration (s)</label><input type="number" id="simDur" value="3600" min="60" max="14400" step="60"></div>
+<div><label>Timestep (s)</label><input type="number" id="dt" value="10" min="1" max="60" step="1"></div>
+</div>
+</div>
+
+<button class="run-btn" onclick="runSim()">▶ RUN SIMULATION</button>
+
+<!-- Results -->
+<div class="results" id="results">
+<div class="section" style="margin-top:1rem">
+<div class="sec-title">Results</div>
+<div id="alerts"></div>
+<div class="results-grid">
+<div>
+<div class="results-block-title">Thermal Summary</div>
+<div id="thermalStats"></div>
+</div>
+<div>
+<div class="results-block-title">Electrical Summary</div>
+<div id="elecStats"></div>
+</div>
+</div>
+<div class="charts-grid">
+<div class="chart-panel"><div class="chart-label">Cell Temperature (°C)</div><div style="position:relative;height:180px"><canvas id="tempChart"></canvas></div></div>
+<div class="chart-panel"><div class="chart-label">State of Charge (%)</div><div style="position:relative;height:180px"><canvas id="socChart"></canvas></div></div>
+<div class="chart-panel"><div class="chart-label">Terminal Voltage — Pack (V)</div><div style="position:relative;height:180px"><canvas id="voltChart"></canvas></div></div>
+<div class="chart-panel"><div class="chart-label">Discharge Current — Pack (A)</div><div style="position:relative;height:180px"><canvas id="currChart"></canvas></div></div>
+</div>
+<div class="charts-grid3">
+<div class="chart-panel"><div class="chart-label">Cell Rint (mΩ) vs Temperature</div><div style="position:relative;height:160px"><canvas id="rintChart"></canvas></div></div>
+<div class="chart-panel"><div class="chart-label">Heat Generation vs Cooling (W)</div><div style="position:relative;height:160px"><canvas id="heatChart"></canvas></div></div>
+<div class="chart-panel"><div class="chart-label">OCV vs SOC Curve</div><div style="position:relative;height:160px"><canvas id="ocvChart"></canvas></div></div>
+</div>
+</div>
+</div>
+
+<footer>Battery Pack Simulator · MVP v1.0 · Lumped-capacitance 1D thermal model · Bottom cooling only</footer>
+</div>
+
+<script>
+const CELLS={
+  LFP:[
+    {name:"CATL LFP 314Ah Prismatic",form:"Prismatic",cap:314,vnom:3.2,vmax:3.65,vmin:2.5,Rint0:0.15,mass:0.58,W:0.17,H:0.065,L:0.207,Cp:1100,maxT:60,notes:"Grade A prismatic, high energy density"},
+    {name:"BYD Blade 138Ah Prismatic",form:"Prismatic",cap:138,vnom:3.2,vmax:3.65,vmin:2.5,Rint0:0.25,mass:0.28,W:0.096,H:0.013,L:0.905,Cp:1050,maxT:60,notes:"Blade cell, excellent safety record"},
+    {name:"Samsung SDI 26650 Cylindrical",form:"Cylindrical",cap:5.0,vnom:3.2,vmax:3.65,vmin:2.5,Rint0:15,mass:0.094,W:0.026,H:0.065,L:0.026,Cp:900,maxT:60,notes:"26650 LFP cylindrical"},
+    {name:"CALB CA180FI Prismatic",form:"Prismatic",cap:180,vnom:3.2,vmax:3.65,vmin:2.5,Rint0:0.2,mass:0.42,W:0.115,H:0.042,L:0.20,Cp:1050,maxT:55,notes:"Standard EV-grade LFP prismatic"},
+  ],
+  NCM:[
+    {name:"Panasonic NCR18650B Cylindrical",form:"Cylindrical",cap:3.35,vnom:3.6,vmax:4.2,vmin:2.5,Rint0:30,mass:0.047,W:0.018,H:0.065,L:0.018,Cp:1000,maxT:60,notes:"Premium 18650, widely used in EVs"},
+    {name:"Samsung SDI 94Ah Prismatic",form:"Prismatic",cap:94,vnom:3.65,vmax:4.2,vmin:2.75,Rint0:0.45,mass:0.196,W:0.148,H:0.026,L:0.091,Cp:1050,maxT:60,notes:"Automotive-grade NCM prismatic"},
+    {name:"LG Chem NCMA 60Ah Pouch",form:"Pouch",cap:60,vnom:3.65,vmax:4.2,vmin:2.75,Rint0:0.6,mass:0.095,W:0.21,H:0.007,L:0.30,Cp:1100,maxT:60,notes:"High-energy pouch for pack design"},
+    {name:"CATL NCM 811 100Ah Pouch",form:"Pouch",cap:100,vnom:3.7,vmax:4.25,vmin:2.8,Rint0:0.4,mass:0.24,W:0.22,H:0.011,L:0.305,Cp:1100,maxT:55,notes:"High nickel NCM 811 chemistry"},
+  ],
+  NCA:[
+    {name:"Tesla 21700 (Panasonic) Cylindrical",form:"Cylindrical",cap:5.0,vnom:3.6,vmax:4.2,vmin:2.5,Rint0:20,mass:0.068,W:0.021,H:0.07,L:0.021,Cp:980,maxT:60,notes:"21700 format, Tesla Model 3/Y"},
+    {name:"Panasonic NCR18650GA Cylindrical",form:"Cylindrical",cap:3.45,vnom:3.6,vmax:4.2,vmin:2.5,Rint0:25,mass:0.048,W:0.018,H:0.065,L:0.018,Cp:1000,maxT:60,notes:"High capacity NCA 18650"},
+    {name:"Murata VTC6 18650 Cylindrical",form:"Cylindrical",cap:3.0,vnom:3.6,vmax:4.2,vmin:2.5,Rint0:18,mass:0.046,W:0.018,H:0.065,L:0.018,Cp:980,maxT:60,notes:"High power NCA 18650"},
+    {name:"Samsung SDI NCA 200Ah Prismatic",form:"Prismatic",cap:200,vnom:3.65,vmax:4.2,vmin:2.75,Rint0:0.35,mass:0.47,W:0.16,H:0.05,L:0.22,Cp:1050,maxT:55,notes:"Large-format NCA prismatic"},
+  ]
+};
+
+const OCV={
+  LFP: s=>interp([[0,2.50],[0.05,3.00],[0.10,3.10],[0.20,3.20],[0.80,3.30],[0.90,3.35],[0.95,3.40],[1.0,3.65]],s),
+  NCM: s=>interp([[0,2.75],[0.05,3.40],[0.10,3.55],[0.20,3.65],[0.40,3.75],[0.60,3.85],[0.80,3.95],[0.90,4.05],[0.95,4.12],[1.0,4.20]],s),
+  NCA: s=>interp([[0,2.75],[0.05,3.45],[0.10,3.58],[0.20,3.68],[0.40,3.78],[0.60,3.88],[0.80,3.98],[0.90,4.08],[0.95,4.14],[1.0,4.20]],s)
+};
+
+function interp(pts,x){
+  if(x<=pts[0][0]) return pts[0][1];
+  if(x>=pts[pts.length-1][0]) return pts[pts.length-1][1];
+  for(let i=0;i<pts.length-1;i++){
+    if(x>=pts[i][0]&&x<=pts[i+1][0]){
+      const t=(x-pts[i][0])/(pts[i+1][0]-pts[i][0]);
+      return pts[i][1]+t*(pts[i+1][1]-pts[i][1]);
+    }
+  }
+  return pts[pts.length-1][1];
+}
+
+function Rint_T(r0,T){return r0*(1+0.005*(25-T));}
+
+let charts={};
+function destroyCharts(){Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});charts={};}
+
+function updateCells(){
+  const chem=document.getElementById('chem').value;
+  const sel=document.getElementById('cellModel');
+  sel.innerHTML='';
+  CELLS[chem].forEach((c,i)=>{const o=document.createElement('option');o.value=i;o.textContent=c.name;sel.appendChild(o);});
+  updateCard();
+}
+
+function getCell(){
+  const chem=document.getElementById('chem').value;
+  const idx=parseInt(document.getElementById('cellModel').value)||0;
+  return {...CELLS[chem][idx],chem};
+}
+
+function getAbase(){
+  const c=getCell();
+  return c.form==='Cylindrical'?Math.PI*(c.W/2)**2:c.W*c.L;
+}
+
+function updateCard(){
+  const c=getCell();
+  const fb={'Cylindrical':'badge-cyl','Pouch':'badge-pou','Prismatic':'badge-pri'};
+  const cb={'LFP':'badge-lfp','NCM':'badge-ncm','NCA':'badge-nca'};
+  const A=getAbase();
+  document.getElementById('cellCard').innerHTML=`
+    <div class="cell-name">${c.name}
+      <span class="badge ${cb[c.chem]}">${c.chem}</span>
+      <span class="badge ${fb[c.form]}">${c.form}</span>
+    </div>
+    <div class="cell-specs">
+      <span>Cap: ${c.cap} Ah</span>
+      <span>Vnom: ${c.vnom} V</span>
+      <span>Vmax: ${c.vmax} V</span>
+      <span>Rint₀: ${c.Rint0} mΩ</span>
+      <span>Mass: ${(c.mass*1000).toFixed(0)} g</span>
+      <span>Cp: ${c.Cp} J/kg·K</span>
+      <span>A_base: ${(A*1e4).toFixed(1)} cm²</span>
+    </div>
+    <div class="cell-note">${c.notes}</div>`;
+  updatePackMetrics(); updateRstack();
+}
+
+function setTIM(val){
+  if(!val) return;
+  const[k,t]=val.split(',').map(Number);
+  document.getElementById('timK').value=k;
+  document.getElementById('timThk').value=t;
+  updateRstack();
+}
+
+function setCPmat(val){
+  if(val!=='custom') document.getElementById('cpK').value=val;
+  updateRstack();
+}
+
+function updateRstack(){
+  const timK=parseFloat(document.getElementById('timK').value)||3;
+  const timT=(parseFloat(document.getElementById('timThk').value)||0.5)/1000;
+  const cpK=parseFloat(document.getElementById('cpK').value)||205;
+  const cpT=(parseFloat(document.getElementById('cpThk').value)||5)/1000;
+  const h=parseFloat(document.getElementById('htc').value)||50;
+  const A=getAbase();
+  const R_tim=(timT/timK)/A;
+  const R_cp=(cpT/cpK)/A;
+  const R_conv=1/(h*A);
+  const R_tot=R_tim+R_cp+R_conv;
+  document.getElementById('rstack').innerHTML=`
+    <div style="font-size:9px;letter-spacing:0.1em;color:#444;margin-bottom:6px;text-transform:uppercase">Thermal Resistance Stack — K/W per cell</div>
+    <div class="rstack-row"><span class="rstack-lbl">R_TIM</span><span>${R_tim.toFixed(4)} K/W</span></div>
+    <div class="rstack-row"><span class="rstack-lbl">R_cold plate</span><span>${R_cp.toFixed(4)} K/W</span></div>
+    <div class="rstack-row"><span class="rstack-lbl">R_convection</span><span>${R_conv.toFixed(4)} K/W</span></div>
+    <div class="rstack-row"><span class="rstack-lbl">R_total</span><span>${R_tot.toFixed(4)} K/W</span></div>`;
+}
+
+function updatePackMetrics(){
+  const c=getCell();
+  const ns=parseInt(document.getElementById('ns').value)||1;
+  const np=parseInt(document.getElementById('np').value)||1;
+  document.getElementById('packMetrics').innerHTML=`
+    <div class="metric"><div class="metric-val">${(ns*c.vnom).toFixed(1)}V</div><div class="metric-lbl">Pack Voltage</div></div>
+    <div class="metric"><div class="metric-val">${(np*c.cap).toFixed(0)}Ah</div><div class="metric-lbl">Pack Capacity</div></div>
+    <div class="metric"><div class="metric-val">${(ns*c.vnom*np*c.cap/1000).toFixed(2)}kWh</div><div class="metric-lbl">Total Energy</div></div>
+    <div class="metric"><div class="metric-val">${(ns*np*c.mass).toFixed(1)}kg</div><div class="metric-lbl">Cell Mass</div></div>`;
+}
+
+function makeChart(id,labels,datasets,yCb){
+  const tc='#555', gc='rgba(255,255,255,0.05)';
+  charts[id]=new Chart(document.getElementById(id),{
+    type:'line',
+    data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:datasets.length>1,labels:{color:tc,font:{size:10},boxWidth:10,padding:8}}},
+      scales:{
+        x:{ticks:{color:tc,font:{size:10},maxTicksLimit:7},grid:{color:gc}},
+        y:{ticks:{color:tc,font:{size:10},callback:yCb||undefined},grid:{color:gc}}
+      }
+    }
+  });
+}
+
+function runSim(){
+  const c=getCell();
+  const ns=parseInt(document.getElementById('ns').value)||1;
+  const np=parseInt(document.getElementById('np').value)||1;
+  const cr=parseFloat(document.getElementById('crate').value)||1;
+  const T0=parseFloat(document.getElementById('T0').value)||25;
+  const Tamb=parseFloat(document.getElementById('Tamb').value)||25;
+  const dur=parseInt(document.getElementById('simDur').value)||3600;
+  const dt=parseInt(document.getElementById('dt').value)||10;
+  const timK=parseFloat(document.getElementById('timK').value)||3;
+  const timT=(parseFloat(document.getElementById('timThk').value)||0.5)/1000;
+  const cpK=parseFloat(document.getElementById('cpK').value)||205;
+  const cpT=(parseFloat(document.getElementById('cpThk').value)||5)/1000;
+  const h=parseFloat(document.getElementById('htc').value)||50;
+  const A=getAbase();
+  const R_tot=(timT/timK)/A+(cpT/cpK)/A+1/(h*A);
+  const I_cell=cr*c.cap;
+  const steps=Math.floor(dur/dt);
+  const skip=Math.max(1,Math.floor(steps/200));
+  const times=[],temps=[],socs=[],volts=[],currs=[],rints=[],qgens=[],qcools=[];
+  let T=T0, soc=1.0;
+  for(let i=0;i<=steps;i++){
+    const Rint=Rint_T(c.Rint0,T);
+    const ocv=OCV[c.chem](soc);
+    const Vpack=(ocv-(I_cell*Rint/1000))*ns;
+    const Ipack=I_cell*np;
+    const Qgen=I_cell*I_cell*(Rint/1000);
+    const Qcool=(T-Tamb)/R_tot;
+    if(i%skip===0){
+      times.push(+(i*dt/60).toFixed(2));
+      temps.push(+T.toFixed(2));
+      socs.push(+(soc*100).toFixed(1));
+      volts.push(+Vpack.toFixed(3));
+      currs.push(+Ipack.toFixed(1));
+      rints.push(+Rint.toFixed(3));
+      qgens.push(+Qgen.toFixed(3));
+      qcools.push(+Qcool.toFixed(3));
+    }
+    if(soc<=0||T>=c.maxT) break;
+    T=Math.min(T+(Qgen-Qcool)/(c.mass*c.Cp)*dt, c.maxT+5);
+    soc=Math.max(0,soc-(I_cell*dt/3600)/c.cap);
+  }
+  const Tmax=Math.max(...temps), Tfinal=temps[temps.length-1];
+  const dischTime=times[times.length-1];
+
+  let aHTML='';
+  if(Tmax>=c.maxT) aHTML=`<div class="alert alert-danger">⚠ Cell exceeded max temp limit (${c.maxT}°C) — increase HTC, reduce C-rate, or use better TIM</div>`;
+  else if(Tmax>c.maxT-5) aHTML=`<div class="alert alert-warn">△ Within 5°C of limit (${c.maxT}°C) — monitor closely</div>`;
+  else aHTML=`<div class="alert alert-ok">✓ Thermal margin OK — peak ${Tmax.toFixed(1)}°C vs limit ${c.maxT}°C (margin: ${(c.maxT-Tmax).toFixed(1)}°C)</div>`;
+  document.getElementById('alerts').innerHTML=aHTML;
+
+  document.getElementById('thermalStats').innerHTML=`
+    <div class="stat-row"><span class="stat-lbl">Initial temp</span><span class="stat-val">${T0}°C</span></div>
+    <div class="stat-row"><span class="stat-lbl">Peak cell temp</span><span class="stat-val">${Tmax.toFixed(1)}°C</span></div>
+    <div class="stat-row"><span class="stat-lbl">ΔT rise</span><span class="stat-val">${(Tfinal-T0).toFixed(1)}°C</span></div>
+    <div class="stat-row"><span class="stat-lbl">Max heat gen / cell</span><span class="stat-val">${Math.max(...qgens).toFixed(2)} W</span></div>
+    <div class="stat-row"><span class="stat-lbl">Max cooling / cell</span><span class="stat-val">${Math.max(...qcools).toFixed(2)} W</span></div>
+    <div class="stat-row"><span class="stat-lbl">R_total</span><span class="stat-val">${R_tot.toFixed(4)} K/W</span></div>`;
+
+  document.getElementById('elecStats').innerHTML=`
+    <div class="stat-row"><span class="stat-lbl">Pack voltage (start)</span><span class="stat-val">${volts[0].toFixed(1)} V</span></div>
+    <div class="stat-row"><span class="stat-lbl">Pack voltage (end)</span><span class="stat-val">${Math.min(...volts).toFixed(1)} V</span></div>
+    <div class="stat-row"><span class="stat-lbl">Discharge current</span><span class="stat-val">${currs[0].toFixed(1)} A</span></div>
+    <div class="stat-row"><span class="stat-lbl">Peak power</span><span class="stat-val">${(volts[0]*currs[0]/1000).toFixed(2)} kW</span></div>
+    <div class="stat-row"><span class="stat-lbl">Total cells</span><span class="stat-val">${ns*np}</span></div>
+    <div class="stat-row"><span class="stat-lbl">Sim duration</span><span class="stat-val">${dischTime.toFixed(1)} min</span></div>`;
+
+  document.getElementById('results').className='results show';
+  destroyCharts();
+
+  const C1='#e05a2b',C2='#1db87a',C3='#3a8cd4',C4='#c99320',C5='#8f7de0',C6='#d45a8f';
+
+  makeChart('tempChart',times,[
+    {label:'Cell Temp',data:temps,borderColor:C1,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false},
+    {label:'Max Limit',data:times.map(()=>c.maxT),borderColor:'rgba(200,60,60,0.3)',borderWidth:1,borderDash:[5,4],pointRadius:0,fill:false}
+  ],v=>v+'°C');
+
+  makeChart('socChart',times,[
+    {label:'SOC',data:socs,borderColor:C2,borderWidth:1.5,pointRadius:0,tension:0.3,fill:{target:'origin',above:'rgba(29,184,122,0.07)'}}
+  ],v=>v+'%');
+
+  makeChart('voltChart',times,[
+    {label:'Pack V',data:volts,borderColor:C3,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false}
+  ],v=>v+'V');
+
+  makeChart('currChart',times,[
+    {label:'Pack I',data:currs,borderColor:C4,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false}
+  ],v=>v+'A');
+
+  makeChart('rintChart',temps,[
+    {label:'Rint',data:rints,borderColor:C5,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false}
+  ],v=>v+'mΩ');
+
+  makeChart('heatChart',times,[
+    {label:'Q gen',data:qgens,borderColor:C1,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false},
+    {label:'Q cool',data:qcools,borderColor:C2,borderWidth:1.5,pointRadius:0,tension:0.3,fill:false}
+  ],v=>v+'W');
+
+  const ss=Array.from({length:21},(_,i)=>i*5);
+  makeChart('ocvChart',ss,[
+    {label:'OCV',data:ss.map(s=>+OCV[c.chem](s/100).toFixed(3)),borderColor:C6,borderWidth:1.5,pointRadius:2,tension:0.2,fill:false}
+  ],v=>v+'V');
+}
+
+updateCells(); updateRstack();
+</script>
+</body>
+</html>
