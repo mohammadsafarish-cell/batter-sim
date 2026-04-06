@@ -360,6 +360,7 @@ function runSim(){
   const T0=parseFloat(document.getElementById('T0').value)||25;
   const Tamb=parseFloat(document.getElementById('Tamb').value)||25;
   const dt=parseInt(document.getElementById('dt').value)||10;
+  const I_cell=cr*c.cap;
   const dur=Math.ceil((c.cap/I_cell)*3600*1.05); // 5% buffer past full discharge
   const timK=parseFloat(document.getElementById('timK').value)||3;
   const timT=(parseFloat(document.getElementById('timThk').value)||0.5)/1000;
@@ -368,7 +369,6 @@ function runSim(){
   const h=parseFloat(document.getElementById('htc').value)||50;
   const A=getAbase();
   const R_tot=(timT/timK)/A+(cpT/cpK)/A+1/(h*A);
-  const I_cell=cr*c.cap;
   const steps=Math.floor(dur/dt);
   const skip=Math.max(1,Math.floor(steps/200));
   const times=[],temps=[],socs=[],volts=[],currs=[],rints=[],qgens=[],qcools=[];
