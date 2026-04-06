@@ -175,11 +175,11 @@ footer{text-align:center;font-size:11px;color:var(--text3);padding:2rem 0 1rem;b
 <div class="card">
   <div class="card-header"><div class="step-badge">4</div><span class="card-title">Simulation Settings</span></div>
   <div class="card-body">
-    <div class="grid3">
+    <div class="grid2">
       <div class="field"><label>Starting Temperature (°C)</label><input type="number" id="T0" value="25" min="-20" max="60"></div>
-      <div class="field"><label>Duration (s)</label><input type="number" id="simDur" value="3600" min="60" max="14400" step="60"></div>
       <div class="field"><label>Timestep (s)</label><input type="number" id="dt" value="10" min="1" max="60" step="1"></div>
     </div>
+    <p style="font-size:11px;color:var(--text3);margin-top:10px">Simulation runs until SOC = 0% or cell temperature reaches T_max, whichever occurs first.</p>
   </div>
 </div>
 
@@ -359,8 +359,8 @@ function runSim(){
   const cr=parseFloat(document.getElementById('crate').value)||1;
   const T0=parseFloat(document.getElementById('T0').value)||25;
   const Tamb=parseFloat(document.getElementById('Tamb').value)||25;
-  const dur=parseInt(document.getElementById('simDur').value)||3600;
   const dt=parseInt(document.getElementById('dt').value)||10;
+  const dur=Math.ceil((c.cap/I_cell)*3600*1.05); // 5% buffer past full discharge
   const timK=parseFloat(document.getElementById('timK').value)||3;
   const timT=(parseFloat(document.getElementById('timThk').value)||0.5)/1000;
   const cpK=parseFloat(document.getElementById('cpK').value)||205;
